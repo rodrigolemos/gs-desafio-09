@@ -3,6 +3,7 @@ import { getRepository, Repository, In } from 'typeorm';
 import IProductsRepository from '@modules/products/repositories/IProductsRepository';
 import ICreateProductDTO from '@modules/products/dtos/ICreateProductDTO';
 import IUpdateProductsQuantityDTO from '@modules/products/dtos/IUpdateProductsQuantityDTO';
+import AppError from '@shared/errors/AppError';
 import Product from '../entities/Product';
 
 interface IFindProducts {
@@ -51,7 +52,28 @@ class ProductsRepository implements IProductsRepository {
   public async updateQuantity(
     products: IUpdateProductsQuantityDTO[],
   ): Promise<Product[]> {
-    // TODO
+    const arrProducts = await this.findAllById(products);
+    const productsToUpdate = arrProducts.map(product => {
+      const productInfo = products.find(prod => prod.id === product.id);
+
+      if (!productInfo) {
+        throw new AppError('Product does not exist');
+      }
+
+      if (product.quantity < productInfo.quantity) {
+        throw new AppError('Out of stock');
+      }
+
+      const updatedProduct = product;
+
+      updatedProduct.quantity -= productInfo.quantity;
+
+      return updatedProduct;
+    });
+
+    await this.ormRepository.save(productsToUpdate);
+
+    return productsToUpdate;
   }
 }
 

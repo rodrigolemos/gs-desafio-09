@@ -59,6 +59,8 @@ class CreateOrderService {
       products: orderProducts,
     });
 
+    await this.productsRepository.updateQuantity(products);
+
     return order;
   }
 }
